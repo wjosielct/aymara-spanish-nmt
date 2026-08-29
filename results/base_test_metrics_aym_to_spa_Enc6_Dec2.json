@@ -1,0 +1,95 @@
+{
+    "model_tag": "aym_to_spa_Enc6_Dec2",
+    "experiment_type": "In-Domain Training",
+    "optimized_for": "chrF++",
+    "checkpoint": "models/trained_model_aym_to_spa_Enc6_Dec2.pt",
+    "in_domain_results": {
+        "test_pairs": 6033,
+        "bleu_score": 21.583946751474272,
+        "chrf_score": 42.14831859498288,
+        "sacrebleu_signature": "BLEU = 21.58 58.0/30.6/18.3/11.7 (BP = 0.868 ratio = 0.876 hyp_len = 144260 ref_len = 164656)",
+        "chrf_signature": "chrF2++ = 42.15"
+    },
+    "out_of_domain_results": {
+        "test_pairs": 244,
+        "bleu_score": 2.6739823892900714,
+        "chrf_score": 23.276296797905367,
+        "sacrebleu_signature": "BLEU = 2.67 23.3/5.7/1.8/0.2 (BP = 1.000 ratio = 1.366 hyp_len = 2148 ref_len = 1572)",
+        "chrf_signature": "chrF2++ = 23.28"
+    },
+    "config": {
+        "seed": 1989,
+        "src": "aym",
+        "tgt": "spa",
+        "raw_bible_data_dir": "data/raw/bible",
+        "raw_pdf_dir": "data/raw/book",
+        "interim_data_dir": "data/interim",
+        "clean_data_dir": "data/clean",
+        "splits_dir": "data/splits",
+        "tokenizer_dir": "tokenizer",
+        "tokenized_dir": "data/tokenized",
+        "models_dir": "models",
+        "results_dir": "results",
+        "bibles": [
+            {
+                "code": 293,
+                "lang": "aym"
+            },
+            {
+                "code": 2250,
+                "lang": "aym"
+            },
+            {
+                "code": 4278,
+                "lang": "spa"
+            },
+            {
+                "code": 146,
+                "lang": "spa"
+            }
+        ],
+        "min_words_bible": 2,
+        "min_words_book": 1,
+        "max_words": 70,
+        "max_ratio": 3.5,
+        "bible_train_ratio": 0.9,
+        "bible_val_ratio": 0.05,
+        "bible_test_ratio": 0.05,
+        "book_train_ratio": 0.7,
+        "book_val_ratio": 0.15,
+        "book_test_ratio": 0.15,
+        "vocab_size": 8000,
+        "model_type": "bpe",
+        "character_coverage": 1.0,
+        "d_model": 256,
+        "n_heads": 8,
+        "encoder_layers": 6,
+        "decoder_layers": 2,
+        "dim_feedforward": 1024,
+        "dropout": 0.2,
+        "epochs": 150,
+        "batch_size_cuda": 64,
+        "batch_size_cpu": 32,
+        "lr": 0.0005,
+        "lr_pct_start": 0.1,
+        "anneal_strategy": "cos",
+        "adam_beta1": 0.9,
+        "adam_beta2": 0.98,
+        "adam_eps": "1e-9",
+        "weight_decay": "1e-4",
+        "label_smoothing": 0.1,
+        "grad_clip_norm": 1.0,
+        "val_eval_interval_epochs": 10,
+        "val_beam_size": 1,
+        "val_max_len": 150,
+        "val_alpha": 0.6,
+        "max_samples_ratio": 0.2,
+        "ft_epochs": 20,
+        "ft_lr": 0.0001,
+        "ft_batch_size": 16,
+        "ft_val_eval_interval": 2,
+        "test_beam_size": 4,
+        "test_max_len": 150,
+        "test_alpha": 0.6
+    }
+}

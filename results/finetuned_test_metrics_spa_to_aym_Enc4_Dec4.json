@@ -1,0 +1,96 @@
+{
+    "model_tag": "spa_to_aym_Enc4_Dec4",
+    "experiment_type": "Out-Of-Domain Fine-Tuning",
+    "optimized_for": "chrF++",
+    "base_checkpoint": "models/trained_model_spa_to_aym_Enc4_Dec4.pt",
+    "finetuned_checkpoint": "models/finetuned_model_spa_to_aym_Enc4_Dec4.pt",
+    "in_domain_results": {
+        "test_pairs": 6033,
+        "bleu_score": 1.975494827637702,
+        "chrf_score": 23.21571511724661,
+        "sacrebleu_signature": "BLEU = 1.98 28.1/4.2/1.1/0.4 (BP = 0.752 ratio = 0.778 hyp_len = 93292 ref_len = 119928)",
+        "chrf_signature": "chrF2++ = 23.22"
+    },
+    "out_of_domain_results": {
+        "test_pairs": 244,
+        "bleu_score": 28.083046598353842,
+        "chrf_score": 56.74370948791301,
+        "sacrebleu_signature": "BLEU = 28.08 65.3/37.2/24.3/14.4 (BP = 0.925 ratio = 0.928 hyp_len = 1042 ref_len = 1123)",
+        "chrf_signature": "chrF2++ = 56.74"
+    },
+    "config": {
+        "seed": 1989,
+        "src": "spa",
+        "tgt": "aym",
+        "raw_bible_data_dir": "data/raw/bible",
+        "raw_pdf_dir": "data/raw/book",
+        "interim_data_dir": "data/interim",
+        "clean_data_dir": "data/clean",
+        "splits_dir": "data/splits",
+        "tokenizer_dir": "tokenizer",
+        "tokenized_dir": "data/tokenized",
+        "models_dir": "models",
+        "results_dir": "results",
+        "bibles": [
+            {
+                "code": 293,
+                "lang": "aym"
+            },
+            {
+                "code": 2250,
+                "lang": "aym"
+            },
+            {
+                "code": 4278,
+                "lang": "spa"
+            },
+            {
+                "code": 146,
+                "lang": "spa"
+            }
+        ],
+        "min_words_bible": 2,
+        "min_words_book": 1,
+        "max_words": 70,
+        "max_ratio": 3.5,
+        "bible_train_ratio": 0.9,
+        "bible_val_ratio": 0.05,
+        "bible_test_ratio": 0.05,
+        "book_train_ratio": 0.7,
+        "book_val_ratio": 0.15,
+        "book_test_ratio": 0.15,
+        "vocab_size": 8000,
+        "model_type": "bpe",
+        "character_coverage": 1.0,
+        "d_model": 256,
+        "n_heads": 8,
+        "encoder_layers": 4,
+        "decoder_layers": 4,
+        "dim_feedforward": 1024,
+        "dropout": 0.2,
+        "epochs": 150,
+        "batch_size_cuda": 64,
+        "batch_size_cpu": 32,
+        "lr": 0.0005,
+        "lr_pct_start": 0.1,
+        "anneal_strategy": "cos",
+        "adam_beta1": 0.9,
+        "adam_beta2": 0.98,
+        "adam_eps": "1e-9",
+        "weight_decay": "1e-4",
+        "label_smoothing": 0.1,
+        "grad_clip_norm": 1.0,
+        "val_eval_interval_epochs": 10,
+        "val_beam_size": 1,
+        "val_max_len": 150,
+        "val_alpha": 0.6,
+        "max_samples_ratio": 0.2,
+        "ft_epochs": 20,
+        "ft_lr": 0.0001,
+        "ft_batch_size": 16,
+        "ft_val_eval_interval": 2,
+        "test_beam_size": 4,
+        "test_max_len": 150,
+        "test_alpha": 0.6
+    }
+}

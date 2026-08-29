@@ -1,0 +1,126 @@
+# ============================================================
+
+# Python
+
+# ============================================================
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+
+.venv/
+venv/
+env/
+ENV/
+
+# Conda environment
+
+.conda/
+
+# Distribution / packaging
+
+build/
+dist/
+*.egg-info/
+
+# ============================================================
+
+# Jupyter
+
+# ============================================================
+
+.ipynb_checkpoints/
+
+# ============================================================
+
+# VS Code
+
+# ============================================================
+
+.vscode/
+
+# ============================================================
+
+# OS files
+
+# ============================================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================
+
+# Logs / temporary files
+
+# ============================================================
+
+*.log
+*.tmp
+*.temp
+
+# ============================================================
+
+# Data
+
+# ============================================================
+
+# --- Bible source data ---
+
+# The Bible editions used in this project are subject to
+
+# copyright and redistribution restrictions.
+
+# Original Bible texts must NOT be committed to the repository.
+
+data/raw/bible/
+
+# --- Bible-derived datasets ---
+
+# These files contain text derived from copyrighted Bible
+
+# sources and are therefore not redistributed.
+
+data/interim/
+data/clean/verses_aligned_clean.tsv
+data/splits/*_bible.tsv
+data/tokenized/*_bible_tokenized.tsv
+
+# --- Conversational corpus ---
+
+# The source PDF is intentionally NOT ignored because it is
+
+# distributed under the original work's CC BY-NC 4.0 license.
+
+#
+
+# The extracted TSV is generated from the PDF and is ignored
+
+# because it is a generated corpus file.
+
+data/raw/book/book.tsv
+data/clean/book_clean.tsv
+data/splits/*_dialogue.tsv
+data/tokenized/*_dialogue_tokenized.tsv
+
+# ============================================================
+
+# Models
+
+# ============================================================
+
+# Trained model checkpoints are large and are not required
+
+# for reproducing the training pipeline.
+
+models/*.pt
+
+# ============================================================
+
+# Generated / local experiment files
+
+# ============================================================
+
+benchmark.log
