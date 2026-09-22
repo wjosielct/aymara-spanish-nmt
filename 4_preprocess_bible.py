@@ -1,4 +1,6 @@
+# =====================
 # ./preprocess_bible.py
+# =====================
 
 from pathlib import Path
 import pandas as pd
@@ -45,3 +47,4 @@ if __name__ == "__main__":
     df.to_csv(output_path, sep="\t", index=False, encoding="utf-8")
 
     print(f"[Saved] Clean Aligned Verses exported to --> {output_path}")
+

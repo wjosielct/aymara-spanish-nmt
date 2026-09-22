@@ -1,4 +1,6 @@
+# =================
 # ./align_verses.py
+# =================
 
 from pathlib import Path
 from src.data.verse_aligner import align_bible_verses

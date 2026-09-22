@@ -1,4 +1,6 @@
+# ================
 # ./split_bible.py
+# ================
 
 from pathlib import Path
 import pandas as pd
@@ -24,7 +26,7 @@ if __name__ == "__main__":
         train_ratio=cfg["bible_train_ratio"],
         val_ratio=cfg["bible_val_ratio"],
         test_ratio=cfg["bible_test_ratio"],
-        seed=cfg["seed"]
+        seed=cfg["data_split_seed"]
     )
 
     # Save split TSV files
@@ -33,3 +35,4 @@ if __name__ == "__main__":
     test_df.to_csv(splits_dir / "test_bible.tsv", sep="\t", index=False, encoding="utf-8")
 
     print(f"[Saved] Splits exported successfully to --> {splits_dir}")
+

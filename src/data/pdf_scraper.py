@@ -1,4 +1,6 @@
+# =========================
 # ./src/data/pdf_scraper.py
+# =========================
 
 import re
 from pathlib import Path
@@ -122,3 +124,4 @@ def scrap_pdf(
     print(f"Total number of raw pairs: {len(book_corpus):,}")
 
     return pd.DataFrame(book_corpus)
+

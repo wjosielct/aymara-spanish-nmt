@@ -1,4 +1,6 @@
+# =========================
 # ./src/data/web_scraper.py
+# =========================
 
 import re
 from time import sleep
@@ -93,3 +95,4 @@ def scrap_bible(bible_code, lang):
     print(f"==================================================\n")
 
     return full_bible
+

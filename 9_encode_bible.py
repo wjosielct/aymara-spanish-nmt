@@ -1,4 +1,6 @@
+# =================
 # ./encode_bible.py
+# =================
 
 from pathlib import Path
 import pandas as pd
@@ -34,3 +36,4 @@ if __name__ == "__main__":
         df_encoded.to_csv(output_tsv, sep="\t", index=False, encoding="utf-8")
 
     print(f"[Saved] Tokenized splits to --> {tokenized_dir}")
+

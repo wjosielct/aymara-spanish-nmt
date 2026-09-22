@@ -1,4 +1,6 @@
+# ====================
 # ./train_tokenizer.py
+# ====================
 
 from itertools import chain
 from pathlib import Path
@@ -28,3 +30,4 @@ if __name__ == "__main__":
         model_type=cfg["model_type"],
         character_coverage=cfg["character_coverage"]
     )
+

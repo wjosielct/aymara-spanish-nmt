@@ -1,11 +1,18 @@
+# Project dependencies for Python 3.10; Windows/Linux with NVIDIA CUDA 12.1.
+# Core versions match the author's ASUS training environment.
+# This is a direct-dependency specification, not a complete environment lock.
+--extra-index-url https://download.pytorch.org/whl/cu121
+torch==2.5.1+cu121
 numpy==2.2.6
 pandas==2.3.3
 PyYAML==6.0.3
-torch==2.13.0
 sentencepiece==0.2.2
 sacrebleu==2.6.0
+
 beautifulsoup4==4.15.0
 curl-cffi==0.16.0
 pdfplumber==0.11.10
+
+# Analysis and notebook kernel (use a separate notebook frontend, e.g. VS Code).
 matplotlib==3.10.9
-seaborn==0.13.2
+ipykernel==7.3.0

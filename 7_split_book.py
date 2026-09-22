@@ -1,4 +1,6 @@
+# ===============
 # ./split_book.py
+# ===============
 
 from pathlib import Path
 import pandas as pd
@@ -23,7 +25,7 @@ if __name__ == "__main__":
         train_ratio=cfg["book_train_ratio"],
         val_ratio=cfg["book_val_ratio"],
         test_ratio=cfg["book_test_ratio"],
-        seed=cfg["seed"]
+        seed=cfg["data_split_seed"]
     )
 
     train_df.to_csv(splits_dir / "train_dialogue.tsv", sep="\t", index=False, encoding="utf-8")
@@ -31,3 +33,4 @@ if __name__ == "__main__":
     test_df.to_csv(splits_dir / "test_dialogue.tsv", sep="\t", index=False, encoding="utf-8")
 
     print(f"[Saved] Splits exported successfully to --> {splits_dir}")
+

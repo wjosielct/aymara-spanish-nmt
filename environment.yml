@@ -1,0 +1,11 @@
+# Run from the repository root, with requirements.txt beside this file.
+# Target: Python 3.10, Windows/Linux x86-64, NVIDIA CUDA 12.1 PyTorch wheel.
+# No machine-specific prefix and no duplicate Conda/Pip PyTorch installation.
+name: nmt
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10.20
+  - pip
+  - pip:
+      - -r requirements.txt

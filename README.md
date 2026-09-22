@@ -1,440 +1,266 @@
 # Aymara–Spanish Neural Machine Translation
 
-This repository contains the source code, experimental configurations, and selected experimental results for the study of neural machine translation between **Aymara and Spanish** in a low-resource setting.
+Code, configurations, and experimental results for bidirectional Aymara–Spanish neural machine translation in a low-resource setting.
 
-The study investigates the effect of **encoder–decoder depth allocation** and **domain adaptation** on bidirectional Aymara–Spanish translation using a compact Transformer architecture.
+The study compares **encoder–decoder depth allocation under a fixed budget of eight Transformer layers**: 4E–4D, 6E–2D, and 2E–6D. The layer budget is fixed; the number of parameters is not identical because decoder layers contain additional cross-attention. This is a controlled architecture study, not a state-of-the-art benchmark.
 
-## Repository contents
+Each architecture is trained in both directions on a biblical corpus and then fine-tuned on a conversational corpus. Both test domains are evaluated before and after fine-tuning.
 
-The repository contains the code required to reproduce the data-processing pipeline, tokenizer training, model training, domain fine-tuning, and evaluation procedures described in the accompanying study.
+## Experimental design
 
-```text
-aymara-spanish-nmt-code/
-│
-├── 1_scrap_bibles.py
-├── 2_scrap_book.py
-├── 3_align_verses.py
-├── 4_preprocess_bible.py
-├── 5_preprocess_book.py
-├── 6_split_bible.py
-├── 7_split_book.py
-├── 8_train_tokenizer.py
-├── 9_encode_bible.py
-├── 10_encode_book.py
-├── 11_run_experiments.py
-│
-├── src/
-│   ├── data/
-│   ├── models/
-│   ├── tokenization/
-│   ├── training/
-│   └── utils/
-│
-├── configs_generated/
-├── config.yaml
-├── requirements.txt
-├── analysis.ipynb
-│
-├── data/
-│   ├── raw/
-│   ├── clean/
-│   ├── interim/
-│   ├── splits/
-│   └── tokenized/
-│
-├── models/
-├── results/
-├── plots/
-└── tokenizer/
-    ├── SentencePiece.model
-    └── SentencePiece.vocab
-```
+| Setting | Value |
+|---|---|
+| Directions | Aymara → Spanish (`aym_to_spa`), Spanish → Aymara (`spa_to_aym`) |
+| Encoder / decoder layers | 4 / 4, 6 / 2, 2 / 6 |
+| Training seeds | `111`, `222`, `333` |
+| Dataset split seed | `1989`, held fixed across all training seeds |
+| Runs | 18 base-training runs and 18 subsequent fine-tuning runs |
+| Tokenizer | Shared SentencePiece BPE, 8,000 pieces; trained on both languages of the biblical training split only |
+| Model width / attention heads / FFN width | 256 / 8 / 1,024 |
+| Dropout | 0.2 |
+| Base training | 150 epochs, CUDA batch size 64, peak learning rate 0.0005 |
+| Fine-tuning | 30 epochs, batch size 16, learning rate 0.0001 |
+| Checkpoint selection | Highest validation chrF++ at the evaluated epochs |
+| Validation decoding | Greedy decoding; full validation set every 10 base epochs / 2 fine-tuning epochs, and at the last epoch |
+| Test decoding | Beam size 4, maximum length 150, length-penalty alpha 0.6 |
 
-The `results/` directory contains the metrics and training histories obtained from the experiments. The `plots/` directory contains figures generated for the analysis.
+The training code uses AdamW, label smoothing, gradient clipping, and CUDA mixed precision. See [`config.yaml`](config.yaml), [`src/training/trainer.py`](src/training/trainer.py), and [`src/training/fine_tuner.py`](src/training/fine_tuner.py) for the full settings. Each result JSON stores its own configuration and selected checkpoint epoch.
 
-Due to copyright and redistribution restrictions, the biblical source texts and datasets derived from them are not included in the repository. The conversational source PDF is included under the license specified by the original work.
+### Dataset sizes
 
----
+| Corpus | Train | Validation | Test | Total |
+|---|---:|---:|---:|---:|
+| Biblical | 108,823 | 6,048 | 6,033 | 120,904 |
+| Conversational | 1,132 | 242 | 244 | 1,618 |
 
-## Software requirements
+These are parallel-pair counts recorded in the project analysis. Biblical splitting groups rows by USFM verse identifier, keeping edition variants of a verse in the same split. Conversational splitting shuffles parallel pairs with the fixed split seed.
 
-The experiments were developed using **Python 3.10**.
+## Repository layout
 
-The recommended Python version is:
+| Path | Purpose |
+|---|---|
+| `1_scrap_bibles.py` … `10_encode_book.py` | Extraction, alignment, preprocessing, splitting, tokenizer training, and encoding |
+| `11_run_transformer_experiments.py` | Multi-seed experiment orchestrator |
+| `config.yaml` | Experiment and data-processing settings |
+| `environment.yml` | Conda environment specification; uses `requirements.txt` |
+| `requirements.txt` | Pinned direct dependencies |
+| `src/data/` | Corpus processing and PyTorch datasets |
+| `src/models/` | Transformer model |
+| `src/tokenization/` | SentencePiece training and encoding |
+| `src/training/` | Base training and fine-tuning |
+| `src/utils/` | Configuration, metrics, parameter counts, reproducibility, and results analysis |
+| `configs_generated/` | 18 generated YAML configurations for the reported runs |
+| `results/` | 36 test-metric JSON files and 36 training-history CSV files |
+| `paper_analysis.ipynb` | Corpus statistics, parameter counts, result aggregation, tables, and plots |
+| `plots/` | Analysis figures, including `architecture_chrf_2x2.png` and `.pdf` |
+| `tokenizer/` | `SentencePiece.model` and `SentencePiece.vocab` |
+| `data/raw/book/book.pdf` | Conversational source work, under its own license |
+| `data/` (other corpus files) | Local source/processed data; excluded from Git |
+| `models/` | Local trained checkpoints; excluded from Git |
 
-```text
-Python 3.10
-```
+## Software and hardware
 
-The Python dependencies are listed in:
+The three-seed experiments were run locally with the following environment, installed before the runs and unchanged afterward:
 
-```text
-requirements.txt
-```
+| Component | Experimental environment |
+|---|---|
+| Computer | ASUS TUF Gaming F15 FX506HF |
+| Operating system | Windows 11 Home, build 26200, x64 |
+| System RAM | Approximately 16 GB |
+| GPU | NVIDIA GeForce RTX 2050, 4 GB VRAM |
+| NVIDIA driver | 531.14 |
+| Conda | 25.7.0 |
+| Python | 3.10.20 |
+| PyTorch | 2.5.1+cu121 |
+| PyTorch CUDA runtime | 12.1; CUDA available |
+| NumPy / pandas | 2.2.6 / 2.3.3 |
+| SentencePiece / SacreBLEU | 0.2.2 / 2.6.0 |
 
-### Creating the environment
+The dependency files pin the project's direct dependencies rather than every package in `pip freeze`. They are not a complete lock of transitive packages or Conda build strings.
 
-Using Conda or Miniconda:
+### Create a new environment
+
+Run from the directory containing both `environment.yml` and `requirements.txt`:
 
 ```bash
-conda create -n nmt python=3.10
+conda env create -f environment.yml
 conda activate nmt
+python -m pip check
 ```
 
-Then install the required Python packages:
+If `nmt` already exists, create a separate environment for verification:
 
 ```bash
-pip install -r requirements.txt
+conda env create -n nmt-repro -f environment.yml
+conda activate nmt-repro
 ```
 
-To verify the Python version:
+Alternatively, without the YAML file:
 
 ```bash
-python --version
+conda create -n nmt-repro python=3.10.20 pip
+conda activate nmt-repro
+python -m pip install -r requirements.txt
+python -m pip check
 ```
 
-It should report Python 3.10.x.
+The supplied requirements target the CUDA 12.1 PyTorch build on compatible Windows/Linux systems. They use the [official PyTorch CUDA 12.1 wheel index](https://download.pytorch.org/whl/cu121); see [PyTorch's previous-version installation instructions](https://pytorch.org/get-started/previous-versions/). Other platforms or CPU-only installations require a corresponding PyTorch build and are not the reported experimental environment.
 
-### GPU support
+Verify the active interpreter and GPU:
 
-The original model training and experimental benchmark were executed on a **JupyterHub cluster at the Universidad Nacional de Ingeniería (UNI), Peru**, using an NVIDIA RTX A4000 GPU with 16 GB of VRAM.
-
-The complete experimental benchmark consists of six configurations:
-
-* Aymara → Spanish: 4 encoder / 4 decoder layers
-* Aymara → Spanish: 6 encoder / 2 decoder layers
-* Aymara → Spanish: 2 encoder / 6 decoder layers
-* Spanish → Aymara: 4 encoder / 4 decoder layers
-* Spanish → Aymara: 6 encoder / 2 decoder layers
-* Spanish → Aymara: 2 encoder / 6 decoder layers
-
-Each configuration includes base training on the biblical corpus followed by domain fine-tuning on the conversational corpus.
-
-The code also supports execution on a local computer. However, reproducing the complete training benchmark may require a CUDA-compatible NVIDIA GPU and sufficient system memory. CPU execution may be possible for individual preprocessing and analysis steps, but full model training can be considerably slower.
-
----
-
-# Data and licensing
-
-## Biblical corpus
-
-The biblical corpus used in this study was constructed from multiple Aymara and Spanish Bible editions.
-
-The editions used were:
-
-| Language | Bible code | Edition                     | Copyright                    |
-| -------- | ---------: | --------------------------- | ---------------------------- |
-| Aymara   |        293 | Qullan Arunaca              | © Sociedad Bíblica Boliviana |
-| Aymara   |       2250 | Qullan Arunaka DC           | © Sociedad Bíblica Boliviana |
-| Spanish  |       4278 | Dios Habla Hoy, 4th edition | © Sociedades Bíblicas Unidas |
-| Spanish  |        146 | Reina Valera Contemporánea  | © Sociedades Bíblicas Unidas |
-
-The original biblical texts and datasets derived from these texts are **not distributed in this repository** because of copyright and redistribution restrictions.
-
-The following data are therefore excluded from the public repository:
-
-```text
-data/raw/bible/
-data/interim/
-data/clean/verses_aligned_clean.tsv
-data/splits/*_bible.tsv
-data/tokenized/*_bible_tokenized.tsv
+```bash
+python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA runtime:', torch.version.cuda); print('CUDA available:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'Unavailable')"
 ```
 
-The repository nevertheless provides the code used to process and prepare the biblical data.
+For notebooks, select this environment in a notebook frontend such as VS Code. A kernel can be registered with:
 
-The biblical data-processing pipeline includes:
-
-1. Extraction of Bible verses.
-2. Alignment of corresponding verses across Bible editions.
-3. Text normalization and cleaning.
-4. Sentence segmentation and filtering.
-5. Dataset partitioning.
-6. SentencePiece tokenizer training.
-7. Encoding of the parallel data.
-
-Because the copyrighted biblical texts are not redistributed, users who wish to reproduce the biblical corpus must obtain access to the corresponding source editions independently and use the provided processing scripts in accordance with the applicable licenses and terms.
-
-### Bible identifiers
-
-The extraction code uses the following Bible identifiers:
-
-```yaml
-bibles:
-  - code: 293   # Qullan Arunaca © Sociedad Bíblica Boliviana
-    lang: aym
-  - code: 2250  # Qullan Arunaka DC © Sociedad Bíblica Boliviana
-    lang: aym
-  - code: 4278  # Dios Habla Hoy, 4th edition © Sociedades Bíblicas Unidas
-    lang: spa
-  - code: 146   # Reina Valera Contemporánea © Sociedades Bíblicas Unidas
-    lang: spa
+```bash
+python -m ipykernel install --user --name nmt --display-name "Python (nmt)"
 ```
 
-The source files expected by the extraction pipeline are:
+`ipykernel` is included; a standalone Jupyter Notebook/Lab frontend is not installed by these files. When using `nmt-repro`, use that name for the kernel instead.
 
-```text
-data/raw/bible/
-├── aym/
-│   ├── 293.json
-│   └── 2250.json
-└── spa/
-    ├── 146.json
-    └── 4278.json
-```
+## Data and licensing
 
-The exact contents of these files are not included in this repository.
+### Biblical corpus
 
----
+The project configuration identifies these editions:
 
-## Conversational corpus
+| Language | Bible ID | Edition | Rights notice |
+|---|---:|---|---|
+| Aymara | 293 | Qullan Arunaca | Sociedad Bíblica Boliviana |
+| Aymara | 2250 | Qullan Arunaka DC | Sociedad Bíblica Boliviana |
+| Spanish | 4278 | Dios Habla Hoy, 4th edition | Sociedades Bíblicas Unidas |
+| Spanish | 146 | Reina Valera Contemporánea | Sociedades Bíblicas Unidas |
 
-The conversational corpus was extracted from:
+The repository does not redistribute these source texts or their aligned, cleaned, split, or tokenized corpora. Tokenized TSV files also retain text columns. Obtain the source editions independently and comply with their applicable permissions and terms; the availability of extraction code is not a grant of rights to the content.
 
-**AYMARA ARUSKIPAWINAKA: Conversaciones en aimara**
+### Conversational corpus
 
-The work was edited by **Román Pairumani Ajacopa** and **Alejandra Bertha Carrasco Lima** and published in January 2022.
+The source is **AYMARA ARUSKIPAWINAKA: Conversaciones en aimara**, edited by **Román Pairumani Ajacopa** and **Alejandra Bertha Carrasco Lima**, first electronic edition, La Paz, Bolivia, January 2022. The credits on page 4 state **Creative Commons Attribution-NonCommercial 4.0 International**.
 
-The source work states that:
+The source PDF is retained at [`data/raw/book/book.pdf`](data/raw/book/book.pdf), with its original credits and license notice. See the [CC BY-NC 4.0 license](https://creativecommons.org/licenses/by-nc/4.0/). Retain attribution, link to the license, indicate changes when making adaptations, and observe the noncommercial restriction. The project extracts and normalizes text locally; generated conversational TSV files are excluded from Git as reproducible intermediate artifacts.
 
-> "Esta obra está bajo una licencia de Creative Commons Reconocimiento-NoComercial 4.0 Internacional."
+### Publication policy
 
-Accordingly, the source PDF is included in:
+The repository tracks code, configurations, aggregate metrics, training histories, figures, and the SentencePiece tokenizer files. Checkpoints and corpora are excluded. Tokenizer files are retained as reproducibility artifacts; their inclusion does not grant rights to the underlying source works.
 
-```text
-data/raw/book/book.pdf
-```
+Do not commit corpus text in notebook outputs, exported previews, or prediction/reference dumps. The publication copy of `paper_analysis.ipynb` omits its two saved corpus-preview outputs while retaining its code and numerical analyses. Running those preview cells again will recreate the outputs locally; clear them before committing.
 
-The work should be attributed to its original authors, and users must comply with the terms of the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license.
+`.gitignore` only prevents new files from being tracked. Previously tracked files need to be removed from the Git index separately, and previous commits remain in repository history.
 
-The extracted and processed corpus files are not distributed in the repository. These files are generated from the source PDF during the preprocessing pipeline.
+## Reproduce the pipeline
 
-The conversational corpus is processed using:
+Run all commands from the project root. Source access is required for the full data/training workflow; cloning alone does not provide the biblical corpus.
 
-```text
-2_scrap_book.py
-5_preprocess_book.py
-7_split_book.py
-10_encode_book.py
-```
-
-The relevant source-work information is:
-
-```text
-AYMARA ARUSKIPAWINAKA: Conversaciones en aimara
-Editors:
-  © Román Pairumani Ajacopa
-  © Alejandra Bertha Carrasco Lima
-
-1st Electronic Edition
-January 2022
-La Paz, Bolivia
-
-License:
-Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
-```
-
----
-
-# Reproducing the data-processing pipeline
-
-Because the biblical source texts cannot be redistributed, the complete biblical dataset cannot be reproduced simply by cloning this repository.
-
-The following workflow describes the intended procedure.
-
-## 1. Obtain the source data
-
-Obtain the Bible editions used in the study from their authorized source.
-
-Place the corresponding source files in:
-
-```text
-data/raw/bible/
-
-├── aym/
-│   ├── 293.json
-│   └── 2250.json
-│
-└── spa/
-    ├── 146.json
-    └── 4278.json
-```
-
-The exact contents of these files are not included in this repository.
-
-## 2. Extract and process the biblical corpus
-
-The biblical extraction and preprocessing pipeline is implemented in:
+1. Obtain authorized access to the biblical editions. `1_scrap_bibles.py` writes JSON source files under `data/raw/bible/aym/` (`293.json`, `2250.json`) and `data/raw/bible/spa/` (`146.json`, `4278.json`). If these files already exist in the expected format, skip extraction.
+2. Ensure `data/raw/book/book.pdf` is present.
+3. Run the applicable preparation steps in this order:
 
 ```bash
 python 1_scrap_bibles.py
+python 2_scrap_book.py
 python 3_align_verses.py
 python 4_preprocess_bible.py
-python 6_split_bible.py
-```
-
-These scripts generate the intermediate and processed data required by subsequent stages.
-
-## 3. Process the conversational corpus
-
-The source PDF is included in:
-
-```text
-data/raw/book/book.pdf
-```
-
-Execute:
-
-```bash
-python 2_scrap_book.py
 python 5_preprocess_book.py
+python 6_split_bible.py
 python 7_split_book.py
 ```
 
-The generated conversational corpus files are not included in the repository.
+The scraper depends on an external website whose availability and layout can change. Previously obtained authorized source files can be processed without downloading them again.
 
-## 4. Train the tokenizer
-
-The project uses a SentencePiece subword tokenizer.
-
-Run:
+For reproduction using the supplied tokenizer, keep `tokenizer/SentencePiece.model` and `.vocab`. To train a new tokenizer from the biblical training split, run:
 
 ```bash
 python 8_train_tokenizer.py
 ```
 
-The resulting tokenizer is stored in:
-
-```text
-tokenizer/
-├── SentencePiece.model
-└── SentencePiece.vocab
-```
-
-## 5. Encode the datasets
-
-After the tokenizer has been trained:
+This replaces the tokenizer files. Do not mix tokenized datasets or checkpoints built with different tokenizers. Encode both corpora with the selected tokenizer:
 
 ```bash
 python 9_encode_bible.py
 python 10_encode_book.py
 ```
 
-These scripts generate the tokenized datasets used by the training pipeline.
-
----
-
-# Running the experiments
-
-The experimental benchmark is orchestrated by:
+### Run the reported experiments
 
 ```bash
-python 11_run_experiments.py
+python 11_run_transformer_experiments.py --seeds 111 222 333
 ```
 
-This script generates the configuration files for the six experimental conditions and executes the base training and domain fine-tuning stages.
+The orchestrator runs six conditions for each seed sequentially. Each condition performs base training, evaluates both test sets, fine-tunes from the selected base checkpoint, and evaluates both test sets again. It generates seed-specific configurations, checkpoints, metrics, and histories.
 
-The experimental configurations are:
+To execute only one seed, or supply a different base configuration:
 
-| Direction        | Encoder | Decoder | Configuration |
-| ---------------- | ------: | ------: | ------------- |
-| Aymara → Spanish |       4 |       4 | Symmetric     |
-| Aymara → Spanish |       6 |       2 | Deep Encoder  |
-| Aymara → Spanish |       2 |       6 | Deep Decoder  |
-| Spanish → Aymara |       4 |       4 | Symmetric     |
-| Spanish → Aymara |       6 |       2 | Deep Encoder  |
-| Spanish → Aymara |       2 |       6 | Deep Decoder  |
+```bash
+python 11_run_transformer_experiments.py --seeds 111
+python 11_run_transformer_experiments.py --seeds 111 222 333 --config config.yaml
+```
 
-The experimental pipeline consists of:
+Repeated runs with the same tags write to the same output paths. Back up results before rerunning; the orchestrator does not implement automatic resume or skip completed runs. Changing batch sizes or other settings creates a different experimental condition.
+
+## Evaluation and analysis
+
+SacreBLEU computes corpus-level **chrF++** and **BLEU** on decoded hypotheses and SentencePiece-decoded references. The saved results use these signatures:
 
 ```text
-Base Biblical Training
-        ↓
-Evaluation
-        ↓
-Conversational Domain Fine-tuning
-        ↓
-Evaluation
+chrF++: nrefs:1|case:mixed|eff:yes|nc:6|nw:2|space:no|version:2.6.0
+BLEU:   nrefs:1|case:mixed|eff:no|tok:13a|smooth:exp|version:2.6.0
 ```
 
-The random seed used by the project is `1989` for reproducibility.
+Each of the 36 metric JSON files contains results for both test domains, yielding 72 evaluation records. Aggregating over the three seeds produces 24 direction/architecture/stage/domain groups. Standard deviations below are sample standard deviations (`ddof=1`), not confidence intervals.
 
----
+The following command summarizes the published JSON results without needing corpus files or model checkpoints:
 
-# Evaluation
-
-The translation systems are evaluated using:
-
-* **BLEU**
-* **chrF++**
-
-The evaluation implementation uses SacreBLEU.
-
-The resulting metrics and training histories are stored in:
-
-```text
-results/
+```bash
+python -c "from src.utils.results_analysis import load_test_results, summarize_test_results; print(summarize_test_results(load_test_results('results')).to_string(index=False))"
 ```
 
-Figures generated during the analysis are stored in:
+To regenerate the architecture figure:
 
-```text
-plots/
+```bash
+python -c "from src.utils.results_analysis import load_test_results, summarize_test_results, plot_architecture_chrf; plot_architecture_chrf(summarize_test_results(load_test_results('results')), output_dir='plots')"
 ```
 
----
+The full notebook also reads local corpus files for statistics and the tokenizer for parameter counts. Those sections cannot run from the public results alone.
 
-# Reproducibility
+## Results
 
-The repository is intended to provide reproducible access to the **source code, model configurations, tokenizer configuration, processing procedures, and experimental results**.
+Mean ± standard deviation across seeds 111, 222, and 333, recomputed from the 36 saved JSON files. `aym` denotes Aymara and `spa` Spanish. Each metric is reported on a 0–100 scale.
 
-Because the biblical source material is subject to copyright restrictions, the original biblical texts and derived biblical datasets are not publicly redistributed.
+### Base model
 
-This repository therefore follows a restricted-data reproducibility approach:
+| Direction | Architecture | Biblical chrF++ | Biblical BLEU | Conversational chrF++ | Conversational BLEU |
+|---|---|---:|---:|---:|---:|
+| aym → spa | 4E–4D | 42.96 ± 0.04 | 22.31 ± 0.06 | 23.39 ± 0.42 | 3.04 ± 0.40 |
+| aym → spa | 6E–2D | 42.07 ± 0.13 | 21.43 ± 0.07 | 22.74 ± 0.32 | 3.72 ± 0.09 |
+| aym → spa | 2E–6D | 42.72 ± 0.11 | 22.02 ± 0.06 | 23.53 ± 0.51 | 3.22 ± 0.18 |
+| spa → aym | 4E–4D | 35.97 ± 0.01 | 7.44 ± 0.02 | 24.46 ± 0.59 | 0.72 ± 0.33 |
+| spa → aym | 6E–2D | 34.95 ± 0.04 | 6.80 ± 0.09 | 23.83 ± 0.13 | 1.05 ± 0.14 |
+| spa → aym | 2E–6D | 35.77 ± 0.08 | 7.27 ± 0.06 | 24.47 ± 0.09 | 0.84 ± 0.38 |
 
-* source code is provided;
-* preprocessing and alignment procedures are provided;
-* model configurations are provided;
-* tokenizer files are provided;
-* experimental results are provided;
-* the conversational source PDF is provided under its stated license;
-* the copyrighted biblical texts are not redistributed;
-* datasets derived from the copyrighted biblical texts are not redistributed;
-* trained model checkpoints are not distributed.
+### Fine-tuned model
 
-The original experiments were executed on the JupyterHub computing infrastructure of the **Universidad Nacional de Ingeniería (UNI), Peru**, using an NVIDIA RTX A4000 GPU with 16 GB of VRAM.
-
-The repository is not tied to the UNI cluster, and the code can be adapted to other compatible environments.
-
----
-
-# Citation
-
-If you use this code or the experimental results in academic work, please cite the accompanying paper:
-
-```text
-[Future final paper citation]
-```
-
----
-
-# License
-
-The source code in this repository is distributed under:
-
-```text
-MIT License
-```
-
-The MIT License permits the use, copying, modification, distribution, sublicensing, and sale of copies of the source code, subject to the terms of the license.
-
-The license applies only to the original source code of this repository. Third-party data, source materials, datasets, and other external resources are subject to their respective licenses and copyright conditions.
+| Direction | Architecture | Biblical chrF++ | Biblical BLEU | Conversational chrF++ | Conversational BLEU |
+|---|---|---:|---:|---:|---:|
+| aym → spa | 4E–4D | 24.24 ± 0.30 | 6.69 ± 0.19 | 59.35 ± 1.53 | 38.20 ± 2.32 |
+| aym → spa | 6E–2D | 23.57 ± 2.48 | 6.60 ± 1.93 | 57.86 ± 1.46 | 37.02 ± 1.53 |
+| aym → spa | 2E–6D | 24.47 ± 0.47 | 6.73 ± 0.30 | 59.46 ± 0.52 | 37.37 ± 0.66 |
+| spa → aym | 4E–4D | 18.97 ± 0.05 | 0.85 ± 0.03 | 58.91 ± 0.76 | 31.49 ± 2.81 |
+| spa → aym | 6E–2D | 17.89 ± 0.52 | 0.70 ± 0.06 | 56.94 ± 0.36 | 28.54 ± 0.61 |
+| spa → aym | 2E–6D | 19.62 ± 0.15 | 0.92 ± 0.06 | 57.81 ± 0.56 | 30.90 ± 1.16 |
 
 
-In particular:
+Fine-tuning improves conversational scores while biblical scores decline in these runs. These observations concern the evaluated corpora and training protocol; they do not establish general superiority or isolate a causal mechanism. Small differences between architectures should be interpreted alongside the variation across seeds.
 
-* the biblical source material is **not covered by the repository's software license** and is not redistributed;
-* datasets derived from the biblical source material are not redistributed;
-* the source PDF *AYMARA ARUSKIPAWINAKA: Conversaciones en aimara* is distributed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license, subject to its original licensing terms.
+## Reproducibility limits
 
-The repository's software license applies only to the original source code and does not grant rights to third-party source materials.
+The code seeds Python, NumPy, and PyTorch, seeds data-loader workers, and configures cuDNN for deterministic behavior. Exact numerical equality across hardware, library builds, or regenerated data/tokenizers is not guaranteed. The published JSON files and their embedded configurations are the record of the reported runs.
+
+The environment specifications were assembled from the author's reported versions and the current source imports. They have not been validated by rerunning all experiments or by a fresh Windows GPU installation during this documentation update.
+
+## License and citation
+
+Original project code is covered by the [MIT License](LICENSE), copyright 2026 Josiel Corbera. Third-party source works are governed by their own terms; the software license does not relicense them.
+
+The accompanying manuscript is in preparation. Until final publication metadata are available, cite this repository and the specific commit used: [wjosielct/aymara-spanish-nmt](https://github.com/wjosielct/aymara-spanish-nmt). Also acknowledge the original data sources where applicable.

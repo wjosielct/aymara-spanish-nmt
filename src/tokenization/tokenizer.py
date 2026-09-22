@@ -1,4 +1,6 @@
+# ===============================
 # ./src/tokenization/tokenizer.py
+# ===============================
 
 from pathlib import Path
 from typing import Iterable, Iterator
@@ -92,3 +94,4 @@ def encode_dataframe(
     df_encoded[tgt_target_name] = df_encoded[target_col].map(_encode_sequence)
 
     return df_encoded
+

@@ -1,4 +1,6 @@
+# ===========================
 # ./src/data/verse_aligner.py
+# ===========================
 
 import json
 from itertools import product
@@ -89,3 +91,4 @@ def align_bible_verses(
     print(f"→ Alignment completed: {len(records):,} total pairs generated.")
 
     return pd.DataFrame(records)
+

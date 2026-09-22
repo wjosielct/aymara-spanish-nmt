@@ -1,4 +1,6 @@
+# ===============
 # ./scrap_book.py
+# ===============
 
 from pathlib import Path
 from src.data.pdf_scraper import scrap_pdf
@@ -19,3 +21,4 @@ if __name__ == "__main__":
         print(f"[SAVED] Raw Book Pairs exported to --> {output_tsv}")
     else:
         print("[WARN] No pairs were extracted from PDF.")
+

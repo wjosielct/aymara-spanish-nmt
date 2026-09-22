@@ -1,7 +1,8 @@
 # ==============================================================================
 # GLOBAL CONFIGURATION & EXPERIMENT
 # ==============================================================================
-seed: 1989
+data_split_seed: 1989 # Fixed seed used only to generate the dataset splits
+seed: 123 # Experimental seed used for model training
 src: "aym"
 tgt: "spa"
 
@@ -84,24 +85,23 @@ label_smoothing: 0.1
 grad_clip_norm: 1.0
 
 # ==============================================================================
-# VALIDATION DURING TRAINING (In-Domain)
+# VALIDATION DURING BASE TRAINING
 # ==============================================================================
 val_eval_interval_epochs: 10
 val_beam_size: 1
 val_max_len: 150
 val_alpha: 0.6
-max_samples_ratio: 0.20
 
 # ==============================================================================
-# DOMAIN FINE-TUNING (Adaptation to OOD)
+# DOMAIN FINE-TUNING
 # ==============================================================================
-ft_epochs: 20
+ft_epochs: 30
 ft_lr: 0.0001
 ft_batch_size: 16
 ft_val_eval_interval: 2
 
 # ==============================================================================
-# FINAL EVALUATION IN TEST SETS (In-Domain & Out-of-Domain)
+# FINAL EVALUATION IN TEST SETS (Biblical & Conversational)
 # ==============================================================================
 test_beam_size: 4
 test_max_len: 150

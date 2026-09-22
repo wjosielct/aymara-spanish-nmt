@@ -1,126 +1,62 @@
-# ============================================================
-
-# Python
-
-# ============================================================
-
-**pycache**/
+# Python caches and packaging
+__pycache__/
 *.py[cod]
 *$py.class
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Virtual environments
-
+# Local environments and secrets (keep environment.yml tracked)
 .venv/
 venv/
 env/
 ENV/
-
-# Conda environment
-
 .conda/
+.env
+.env.*
+!.env.example
 
-# Distribution / packaging
-
-build/
-dist/
-*.egg-info/
-
-# ============================================================
-
-# Jupyter
-
-# ============================================================
-
+# Notebook checkpoints, editors, and operating-system files
 .ipynb_checkpoints/
-
-# ============================================================
-
-# VS Code
-
-# ============================================================
-
 .vscode/
-
-# ============================================================
-
-# OS files
-
-# ============================================================
-
+.idea/
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ============================================================
-
-# Logs / temporary files
-
-# ============================================================
-
+# Logs and temporary files
 *.log
 *.tmp
 *.temp
+*.bak
+*.swp
 
-# ============================================================
+# Source data: exclude all raw data except the licensed conversational PDF.
+# Biblical source editions are not redistributed by this repository.
+/data/raw/*
+!/data/raw/book/
+/data/raw/book/*
+!/data/raw/book/book.pdf
 
-# Data
+# Generated corpora include source text even when tokenized.
+/data/interim/
+/data/clean/
+/data/splits/
+/data/tokenized/
 
-# ============================================================
+# Model checkpoints.
+/models/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
 
-# --- Bible source data ---
-
-# The Bible editions used in this project are subject to
-
-# copyright and redistribution restrictions.
-
-# Original Bible texts must NOT be committed to the repository.
-
-data/raw/bible/
-
-# --- Bible-derived datasets ---
-
-# These files contain text derived from copyrighted Bible
-
-# sources and are therefore not redistributed.
-
-data/interim/
-data/clean/verses_aligned_clean.tsv
-data/splits/*_bible.tsv
-data/tokenized/*_bible_tokenized.tsv
-
-# --- Conversational corpus ---
-
-# The source PDF is intentionally NOT ignored because it is
-
-# distributed under the original work's CC BY-NC 4.0 license.
-
-#
-
-# The extracted TSV is generated from the PDF and is ignored
-
-# because it is a generated corpus file.
-
-data/raw/book/book.tsv
-data/clean/book_clean.tsv
-data/splits/*_dialogue.tsv
-data/tokenized/*_dialogue_tokenized.tsv
-
-# ============================================================
-
-# Models
-
-# ============================================================
-
-# Trained model checkpoints are large and are not required
-
-# for reproducing the training pipeline.
-
-models/*.pt
-
-# ============================================================
-
-# Generated / local experiment files
-
-# ============================================================
-
-benchmark.log
+# Track code, config.yaml, configs_generated/, results/, plots/,
+# tokenizer/SentencePiece.model, tokenizer/SentencePiece.vocab, and the notebook.
+# Before committing the notebook, remove any saved corpus-text previews.
+# Ignore rules do not untrack files already committed to Git.

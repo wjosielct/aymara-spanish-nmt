@@ -1,9 +1,10 @@
+# ======================
 # ./src/utils/metrics.py
+# ======================
 
 import math
-import random
 from typing import List, Tuple
-import sacrebleu
+from sacrebleu.metrics import BLEU, CHRF
 import sentencepiece as spm
 import torch
 import torch.nn.functional as F
@@ -139,24 +140,15 @@ def evaluate_metrics(
     device: torch.device,
     beam_size: int = 1,
     max_len: int = 150,
-    alpha: float = 0.6,
-    max_samples: int | None = None,
-    seed: int = 1989,
+    alpha: float = 0.6
 ) -> Tuple[float, float, str, str]:
 
     model.eval()
-    total_samples = len(dataset)
-
-    if max_samples and max_samples < total_samples:
-        rng = random.Random(seed)
-        indices = rng.sample(range(total_samples), max_samples)
-    else:
-        indices = range(total_samples)
 
     hypotheses = []
     references = []
 
-    for idx in indices:
+    for idx in range(len(dataset)):
         src, tgt = dataset[idx]
         ref_text = sp.decode(tgt.tolist())
 
@@ -177,7 +169,16 @@ def evaluate_metrics(
         references.append(ref_text)
         hypotheses.append(pred_text)
 
-    bleu_obj = sacrebleu.corpus_bleu(hypotheses, [references])
-    chrf_obj = sacrebleu.corpus_chrf(hypotheses, [references], word_order=2)
+    bleu_metric = BLEU()
+    chrf_metric = CHRF(word_order=2)
 
-    return bleu_obj.score, chrf_obj.score, str(bleu_obj), str(chrf_obj)
+    bleu_obj = bleu_metric.corpus_score(hypotheses, [references])
+    chrf_obj = chrf_metric.corpus_score(hypotheses, [references])
+
+    return (
+        bleu_obj.score,
+        chrf_obj.score,
+        str(bleu_metric.get_signature()),
+        str(chrf_metric.get_signature())
+    )
+

@@ -1,4 +1,6 @@
+# ============
 # ./trainer.py
+# ============
 
 import json
 from pathlib import Path
@@ -22,11 +24,12 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torch.nn.modules
 
 def run_training(config_path: str | Path = "config.yaml") -> None:
 
+    start_time = time.perf_counter()
+
     cfg = load_config(config_path)
 
     # Deterministic environment and hardware configuration
     set_seed(cfg["seed"])
-    start_time = time.perf_counter()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     use_amp = (device.type == "cuda")
@@ -56,15 +59,15 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
         tgt_col=f"{cfg['tgt']}_ids"
     )
 
-    # In-Domain Test Set
-    test_id_dataset = ParallelTranslationDataset(
+    # In-Domain Test Set (Biblical Test Set)
+    test_bible_dataset = ParallelTranslationDataset(
         tsv_path=tokenized_dir / "test_bible_tokenized.tsv",
         src_col=f"{cfg['src']}_ids",
         tgt_col=f"{cfg['tgt']}_ids"
     )
 
-    # Out-of-Domain Test Set
-    test_ood_dataset = ParallelTranslationDataset(
+    # Out-of-Domain Test Set (Conversational Test Set)
+    test_conv_dataset = ParallelTranslationDataset(
         tsv_path=tokenized_dir / "test_dialogue_tokenized.tsv",
         src_col=f"{cfg['src']}_ids",
         tgt_col=f"{cfg['tgt']}_ids"
@@ -131,9 +134,10 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
     best_val_loss = float("inf")
     best_val_bleu = 0.0
     best_val_chrf = 0.0
+    best_epoch = None
     history = []
 
-    model_tag = f"{cfg['src']}_to_{cfg['tgt']}_Enc{cfg['encoder_layers']}_Dec{cfg['decoder_layers']}"
+    model_tag = f"{cfg['src']}_to_{cfg['tgt']}_Enc{cfg['encoder_layers']}_Dec{cfg['decoder_layers']}_Seed{cfg['seed']}"
     best_model_path = models_dir / f"trained_model_{model_tag}.pt"
 
     print("\n" + "=" * 70)
@@ -170,7 +174,7 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
 
         train_loss /= len(train_loader)
 
-        #  Validation of Loss
+        # Validation of Loss
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
@@ -187,7 +191,7 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
         if val_loss < best_val_loss:
             best_val_loss = val_loss
 
-        # Periodic validation of BLEU / chrF++
+        # Periodic computation of BLEU / chrF++ on Validation Set
         val_bleu, val_chrf = None, None
         if epoch % cfg["val_eval_interval_epochs"] == 0 or epoch == epochs:
             val_bleu, val_chrf, _, _ = evaluate_metrics(
@@ -197,9 +201,7 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
                 device=device,
                 beam_size=cfg["val_beam_size"],
                 max_len=cfg["val_max_len"],
-                alpha=cfg["val_alpha"],
-                max_samples=int(cfg["max_samples_ratio"] * len(val_dataset)),
-                seed=cfg["seed"]
+                alpha=cfg["val_alpha"]
             )
 
             if val_bleu > best_val_bleu:
@@ -207,6 +209,7 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
 
             if val_chrf > best_val_chrf:
                 best_val_chrf = val_chrf
+                best_epoch = epoch
                 torch.save(model.state_dict(), best_model_path)
 
         bleu_str = f"{val_bleu:.2f}" if val_bleu is not None else "-"
@@ -224,12 +227,12 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
         pd.DataFrame(history).to_csv(results_dir / f"training_history_{model_tag}.csv", index=False)
 
     print("\n" + "=" * 70)
-    print(f"Training Complete! --> Best Val Loss: {best_val_loss:.4f} | Best Val BLEU: {best_val_bleu:.2f} | Best Val chrF++: {best_val_chrf:.2f}")
+    print(f"¡Training Complete! --> Best Epoch: {best_epoch} | Best Val chrF++: {best_val_chrf:.2f}")
     print("=" * 70)
 
-    # --------------------------------------------------------------
-    # Final Evaluation in Test Sets (In-Domain vs Out-of-Domain)
-    # --------------------------------------------------------------
+    # =============================================================
+    # Final Evaluation in Test Sets (Biblical vs Conversational)
+    # =============================================================
     print(f"\nEvaluating Test Sets with --> {best_model_path}")
 
     eval_model = TranslationTransformer(
@@ -246,78 +249,78 @@ def run_training(config_path: str | Path = "config.yaml") -> None:
     eval_model.load_state_dict(torch.load(best_model_path, map_location=device, weights_only=True))
     eval_model.eval()
 
-    # Evaluation in In-Domain Test Set (Biblical)
-    id_bleu, id_chrf, id_bleu_sig, id_chrf_sig = evaluate_metrics(
+    # Evaluation in In-Domain Test Set (Biblical Test Set)
+    bib_bleu, bib_chrf, bib_bleu_sig, bib_chrf_sig = evaluate_metrics(
         model=eval_model,
-        dataset=test_id_dataset,
+        dataset=test_bible_dataset,
         sp=sp,
         device=device,
         beam_size=cfg["test_beam_size"],
         max_len=cfg["test_max_len"],
-        alpha=cfg["test_alpha"],
-        max_samples=None,
-        seed=cfg["seed"]
+        alpha=cfg["test_alpha"]
     )
 
-    id_results = {
-        "test_pairs": len(test_id_dataset),
-        "bleu_score": id_bleu,
-        "chrf_score": id_chrf,
-        "sacrebleu_signature": id_bleu_sig,
-        "chrf_signature": id_chrf_sig
+    bib_results = {
+        "test_pairs": len(test_bible_dataset),
+        "bleu_score": bib_bleu,
+        "chrf_score": bib_chrf,
+        "bleu_signature": bib_bleu_sig,
+        "chrf_signature": bib_chrf_sig
     }
 
-    # Evaluation in Out-of-Domain Test Set (Dialogues)
-    ood_bleu, ood_chrf, ood_bleu_sig, ood_chrf_sig = evaluate_metrics(
+    # Evaluation in Out-of-Domain Test Set (Conversational Test Set)
+    conv_bleu, conv_chrf, conv_bleu_sig, conv_chrf_sig = evaluate_metrics(
         model=eval_model,
-        dataset=test_ood_dataset,
+        dataset=test_conv_dataset,
         sp=sp,
         device=device,
         beam_size=cfg["test_beam_size"],
         max_len=cfg["test_max_len"],
-        alpha=cfg["test_alpha"],
-        max_samples=None,
-        seed=cfg["seed"]
+        alpha=cfg["test_alpha"]
     )
 
-    ood_results = {
-        "test_pairs": len(test_ood_dataset),
-        "bleu_score": ood_bleu,
-        "chrf_score": ood_chrf,
-        "sacrebleu_signature": ood_bleu_sig,
-        "chrf_signature": ood_chrf_sig
+    conv_results = {
+        "test_pairs": len(test_conv_dataset),
+        "bleu_score": conv_bleu,
+        "chrf_score": conv_chrf,
+        "bleu_signature": conv_bleu_sig,
+        "chrf_signature": conv_chrf_sig
     }
 
     # Printing results on console
     print("\n" + "=" * 65)
-    print(f"FINAL TEST EVALUATION (chrF++ Checkpoint | {model_tag})")
+    print(f"FINAL TEST SET EVALUATION (chrF++ Checkpoint | {model_tag})")
     print("=" * 65)
 
-    print(f"• IN-DOMAIN TEST (Biblical) [{len(test_id_dataset):,} pairs]")
-    print(f"   - BLEU Score  : {id_bleu:.2f}")
-    print(f"   - chrF++ Score: {id_chrf:.2f}")
+    print(f"• IN-DOMAIN TEST SET (Biblical Test Set) [{len(test_bible_dataset):,} pairs]")
+    print(f"   - BLEU Score  : {bib_bleu:.2f}")
+    print(f"   - chrF++ Score: {bib_chrf:.2f}")
 
-    print(f"• OUT-OF-DOMAIN TEST (Dialogue) [{len(test_ood_dataset):,} pairs]")
-    print(f"   - BLEU Score  : {ood_bleu:.2f}")
-    print(f"   - chrF++ Score: {ood_chrf:.2f}")
+    print(f"• OUT-OF-DOMAIN TEST SET (Conversational Test Set) [{len(test_conv_dataset):,} pairs]")
+    print(f"   - BLEU Score  : {conv_bleu:.2f}")
+    print(f"   - chrF++ Score: {conv_chrf:.2f}")
     print("=" * 65 + "\n")
 
-    # Exportación del reporte JSON consolidado
+    elapsed_time = time.perf_counter() - start_time
+
+    # Exporting the consolidated JSON report
     eval_payload = {
         "model_tag": model_tag,
-        "experiment_type": "In-Domain Training",
+        "experiment_type": "Base-Training",
         "optimized_for": "chrF++",
+        "best_checkpoint_epoch": best_epoch,
         "checkpoint": str(best_model_path),
-        "in_domain_results": id_results,
-        "out_of_domain_results": ood_results,
+        "biblical_results": bib_results,
+        "conversational_results": conv_results,
+        "total_execution_time": elapsed_time/3600,
         "config": cfg
     }
 
-    out_json = f"base_test_metrics_{model_tag}.json"
+    out_json = f"trained_test_metrics_{model_tag}.json"
 
     with open(results_dir / out_json, "w", encoding="utf-8") as file:
         json.dump(eval_payload, file, indent=4)
 
-    elapsed_time = time.perf_counter() - start_time
     print(f"Total execution time: {elapsed_time / 3600:.2f} hours")
     print(f"[Saved] Results payload exported to --> {results_dir / out_json}")
+
